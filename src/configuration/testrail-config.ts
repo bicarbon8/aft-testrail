@@ -3,7 +3,7 @@ import { TestConfig, TestLogLevel, Convert } from "aft-core";
 export module TestRailConfig {
     export const TESTRAIL_LOGLEVEL_KEY = 'testrail_loglevel';
     export const TESTRAIL_USER_KEY = 'testrail_user';
-    export const TESTRAIL_PASS_KEY = 'testrail_pass';
+    export const TESTRAIL_PASS_KEY = 'testrail_encoded_pass';
     export const TESTRAIL_URL_KEY = 'testrail_url';
     export const TESTRAIL_MAXLOGCHARS_KEY = 'testrail_maxlogchars';
     export const TESTRAIL_PROJECTID_KEY = 'testrail_projectid';

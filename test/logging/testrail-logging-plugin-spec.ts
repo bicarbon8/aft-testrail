@@ -3,7 +3,7 @@ import { RandomGenerator, TestLogLevel, EllipsisLocation, TestResult, TestStatus
 import { TestRailApi } from "../../src/api/testrail-api";
 import { TestRailResultRequest } from "../../src/api/testrail-result-request";
 import { TestRailResultResponse } from "../../src/api/testrail-result-response";
-import { TestRailConfig } from "../../src";
+import { TestRailConfig } from "../../src/configuration/testrail-config";
 
 describe('TestRailLoggingPlugin', () => {
     beforeEach(() => {
@@ -90,12 +90,17 @@ describe('TestRailLoggingPlugin', () => {
      * connect to an actual TestRail instance and submit a Retest result.
      */
     xit('sends actual TestResult to TestRail', async () => {
+        /**
+         * NOTE: first comment out the setting of the plan_id in the BeforeEach above
+         * and then edit values in aftconfig.json before running this test
+         */
         await TestRailConfig.write(true); // enable the logging plugin
         let plugin: TestRailLoggingPlugin = new TestRailLoggingPlugin();
         
         await plugin.log(TestLogLevel.error, RandomGenerator.getString(100));
         
         let testResult: TestResult = new TestResult();
+        testResult.TestId = 'C3190'; // must be an existing TestRail Case ID
         testResult.TestStatus = TestStatus.Failed;
         testResult.ResultMessage = RandomGenerator.getString(100);
 

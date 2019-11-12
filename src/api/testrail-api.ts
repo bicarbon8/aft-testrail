@@ -119,7 +119,11 @@ export class TestRailApi {
     }
 
     private async fullUrl(): Promise<string> {
-        return await TestRailConfig.url() + 'index.php?/api/v2/';
+        let url: string = await TestRailConfig.url();
+        if (!url.endsWith('/')) {
+            url += '/';
+        }
+        return url + 'index.php?/api/v2/';
     }
 
     private async performRequestWithRateLimitHandling(request: HttpRequest): Promise<HttpResponse> {
