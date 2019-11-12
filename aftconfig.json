@@ -1,0 +1,11 @@
+{
+    "testloglevel": "info",
+    "testrail_loglevel": "warn",
+    "testrail_write": "true",
+    "testrail_url": "http://fake.testrail.ie",
+    "testrail_user": "your.email@your.domain.com",
+    "testrail_encoded_pass": "your_base64_encoded_testrail_password",
+    "testrail_projectid": "3",
+    "testrail_suiteids": "1219 744",
+    "testrail_planid": "12345"
+}
