@@ -5,11 +5,10 @@
   "main": "./dist/src/index/js",
   "types": "./dist/src/index.d.ts",
   "scripts": {
-    "pretest": "tsc",
+    "pretest": "tsc --declaration",
     "posttest": "",
     "build": "tsc --declaration",
-    "test": "jasmine JASMINE_CONFIG_PATH=./jasmine.json",
-    "prepare": "tsc --declaration"
+    "test": "jasmine JASMINE_CONFIG_PATH=./jasmine.json"
   },
   "keywords": [
     "aft",
@@ -22,8 +21,8 @@
   "author": "Jason Holt Smith <bicarbon8@gmail.com>",
   "license": "MIT",
   "dependencies": {
-    "es6-promise": "^4.2.8",
-    "aft-web-services": "git+https://github.com/bicarbon8/aft-web-services.git"
+    "aft-web-services": "1.0.0",
+    "es6-promise": "^4.2.8"
   },
   "devDependencies": {
     "@types/node": "^12.7.12",
