@@ -4,7 +4,6 @@ import { TestRailApi } from "../api/testrail-api";
 import { TestRailResultRequest } from "../api/testrail-result-request";
 import 'aft-core/dist/src/extensions/string-extensions';
 
-@ILoggingPlugin.register
 export class TestRailLoggingPlugin implements ILoggingPlugin {
     name: string = 'testrail';
         

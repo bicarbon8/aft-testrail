@@ -1,6 +1,6 @@
 {
   "name": "aft-testrail",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Automation Framework for Testing (AFT) package TestRail integration",
   "main": "./dist/src/index/js",
   "types": "./dist/src/index.d.ts",
@@ -21,7 +21,7 @@
   "author": "Jason Holt Smith <bicarbon8@gmail.com>",
   "license": "MIT",
   "dependencies": {
-    "aft-web-services": "1.0.0",
+    "aft-web-services": "^1.0.1",
     "es6-promise": "^4.2.8"
   },
   "devDependencies": {
