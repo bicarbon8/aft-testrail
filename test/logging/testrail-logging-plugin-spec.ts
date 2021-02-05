@@ -1,111 +1,141 @@
 import { TestRailLoggingPlugin } from "../../src/logging/testrail-logging-plugin";
-import { RandomGenerator, TestLogLevel, EllipsisLocation, TestResult, TestStatus } from "aft-core";
+import { RG, LoggingLevel, EllipsisLocation, ITestResult, TestStatus } from "aft-core";
 import { TestRailApi } from "../../src/api/testrail-api";
 import { TestRailResultRequest } from "../../src/api/testrail-result-request";
 import { TestRailResultResponse } from "../../src/api/testrail-result-response";
 import { TestRailConfig } from "../../src/configuration/testrail-config";
 
 describe('TestRailLoggingPlugin', () => {
-    beforeEach(() => {
-        process.env.testrail_planid = RandomGenerator.getInt(999, 9999).toString();
-    });
-
     afterEach(() => {
-        delete process.env.testrail_planid;
         TestStore.caseId = undefined;
         TestStore.planId = undefined;
         TestStore.request = undefined;
     });
 
-    it('holds on to the last 250 characters of logging', async () => {
-        let plugin: TestRailLoggingPlugin = new TestRailLoggingPlugin();
+    it('keeps the last 250 characters logged', async () => {
+        let config: TestRailConfig = new TestRailConfig({
+            write: true, 
+            url: 'https://127.0.0.1/', 
+            user: 'fake@fake.fake', 
+            access_key: 'fake-key',
+            logging_level: 'info'
+        });
+        let plugin: TestRailLoggingPlugin = new TestRailLoggingPlugin(config);
+        let getLogsSpy = spyOn<any>(plugin, '_getLogs').and.callThrough();
 
-        let expected: string = RandomGenerator.getString(249, true, true); // one short of 250 to account for added '\n'
-        spyOn(plugin, 'level').and.returnValue(new Promise<TestLogLevel>((resolve) => {
-            resolve(TestLogLevel.info);
-        }));
-        spyOn(plugin, 'enabled').and.returnValue(new Promise<boolean>((resolve) => {
-            resolve(true);
-        }));
-        let getLogsSpy: jasmine.Spy<any> = spyOn<any>(plugin, 'getLogs').and.callThrough();
-
-        await plugin.log(TestLogLevel.info, expected);
+        let expected: string = RG.getString(250, true, true);
+        await plugin.log(LoggingLevel.info, expected);
 
         let actual: string = getLogsSpy.call(plugin);
-        expect(actual).toEqual(expected + '\n');
+        expect(actual).toEqual(expected);
     });
 
-    it('logging over 250 characters is ellided', async () => {
-        let plugin: TestRailLoggingPlugin = new TestRailLoggingPlugin();
-
-        let notExpected: string = RandomGenerator.getString(200, true, true);
-        let expected: string = RandomGenerator.getString(249, true, true); // one short of 250 to account for added '\n'
-        spyOn(plugin, 'level').and.returnValue(new Promise<TestLogLevel>((resolve) => {
-            resolve(TestLogLevel.info);
-        }));
-        spyOn(plugin, 'enabled').and.returnValue(new Promise<boolean>((resolve) => {
-            resolve(true);
-        }));
-        let getLogsSpy = spyOn<any>(plugin, 'getLogs').and.callThrough();
-
-        await plugin.log(TestLogLevel.info, notExpected);
-        await plugin.log(TestLogLevel.info, expected);
+    it('logging over 250 characters is ellided from beginning of string', async () => {
+        let config: TestRailConfig = new TestRailConfig({
+            write: true, 
+            url: 'https://127.0.0.1/', 
+            user: 'fake@fake.fake', 
+            access_key: 'fake-key',
+            logging_level: 'info'
+        });
+        let plugin: TestRailLoggingPlugin = new TestRailLoggingPlugin(config);
+        let getLogsSpy = spyOn<any>(plugin, '_getLogs').and.callThrough();
+        
+        let notExpected: string = RG.getString(200, true, true);
+        let expected: string = RG.getString(250, true, true);
+        
+        await plugin.log(LoggingLevel.info, notExpected);
+        await plugin.log(LoggingLevel.info, expected);
 
         let actual: string = getLogsSpy.call(plugin);
-        expect(actual).toEqual(('foo' + expected).ellide(249, EllipsisLocation.beginning) + '\n');
+        expect(actual).toEqual((notExpected + expected).ellide(250, EllipsisLocation.beginning));
     });
 
     it('converts a Failed result to Retry', async () => {
-        let plugin: TestRailLoggingPlugin = new TestRailLoggingPlugin();
-        spyOn(plugin, 'level').and.returnValue(new Promise<TestLogLevel>((resolve) => {
-            resolve(TestLogLevel.info);
-        }));
-        spyOn(plugin, 'enabled').and.returnValue(new Promise<boolean>((resolve) => {
-            resolve(true);
-        }));
-
-        let result: TestResult = new TestResult();
-        result.TestId = 'C' + RandomGenerator.getInt(99, 999);
-        result.TestStatus = TestStatus.Failed;
-
-        let mockClient: TestRailApi = new TestRailApi();
-        let clientSpy = spyOn(mockClient, 'addResult').and.callFake(async (caseId: string, request: TestRailResultRequest, planId: number): Promise<TestRailResultResponse[]> => {
+        let config: TestRailConfig = new TestRailConfig({
+            write: true, 
+            url: 'https://127.0.0.1/', 
+            user: 'fake@fake.fake', 
+            access_key: 'fake-key',
+            logging_level: 'info'
+        });
+        let mockClient: TestRailApi = new TestRailApi(config);
+        spyOn(mockClient, 'addResult').and.callFake(async (caseId: string, planId: number, request: TestRailResultRequest): Promise<TestRailResultResponse[]> => {
             TestStore.caseId = caseId;
             TestStore.request = request;
             TestStore.planId = planId;
-            return new Array<TestRailResultResponse>(0);
+            return [];
         });
-        spyOn<any>(plugin, 'getClient').and.returnValue(mockClient);
-
+        let plugin: TestRailLoggingPlugin = new TestRailLoggingPlugin(config, mockClient);
+        
+        let result: ITestResult = {
+            testId: 'C' + RG.getInt(99, 999),
+            status: TestStatus.Failed,
+            resultId: RG.getGuid(),
+            created: new Date(),
+            metadata: {"durationMs": 1000}
+        };
         await plugin.logResult(result);
 
-        expect(clientSpy).toHaveBeenCalledTimes(1);
+        expect(mockClient.addResult).toHaveBeenCalledTimes(1);
         expect(TestStore.request.status_id).toEqual(4); // 4 is Retest
-        expect(TestStore.caseId).toEqual(result.TestId);
-        expect(TestStore.planId).not.toBeUndefined();
+        expect(TestStore.caseId).toEqual(result.testId);
+        expect(TestStore.planId).toBeDefined();
+    });
+
+    it('will not send a result if write not enabled', async () => {
+        let config: TestRailConfig = new TestRailConfig({
+            write: false
+        });
+        let mockClient: TestRailApi = new TestRailApi(config);
+        spyOn(mockClient, 'addResult');
+        let plugin: TestRailLoggingPlugin = new TestRailLoggingPlugin(config, mockClient);
+        
+        let result: ITestResult = {
+            testId: 'C' + RG.getInt(99, 999),
+            status: TestStatus.Failed,
+            resultId: RG.getGuid(),
+            created: new Date(),
+            metadata: {"durationMs": 1000}
+        };
+        await plugin.logResult(result);
+
+        expect(mockClient.addResult).not.toHaveBeenCalled();
     });
 
     /**
      * WARNING: this test is only for local connectivity testing. it will
      * connect to an actual TestRail instance and submit a Retest result.
+     * the `url`, `user` and `access_key` configurations should be set as
+     * environment variables on the local system and the `project_id`,
+     * `suite_ids` and `ITestResult.testId` should be updated to value values
      */
     xit('sends actual TestResult to TestRail', async () => {
-        /**
-         * NOTE: first comment out the setting of the plan_id in the BeforeEach above
-         * and then edit values in aftconfig.json before running this test
-         */
-        await TestRailConfig.write(true); // enable the logging plugin
-        let plugin: TestRailLoggingPlugin = new TestRailLoggingPlugin();
+        let config: TestRailConfig = new TestRailConfig({
+            write: true, 
+            url: '%testrail_url%', 
+            user: '%testrail_user%', 
+            access_key: '%testrail_pass%',
+            logging_level: 'trace',
+            project_id: 3,
+            suite_ids: [1219]
+        });
+        let plugin: TestRailLoggingPlugin = new TestRailLoggingPlugin(config);
+        await plugin.onLoad();
         
-        await plugin.log(TestLogLevel.error, RandomGenerator.getString(100));
+        await plugin.log(LoggingLevel.error, RG.getString(100));
         
-        let testResult: TestResult = new TestResult();
-        testResult.TestId = 'C3190'; // must be an existing TestRail Case ID
-        testResult.TestStatus = TestStatus.Failed;
-        testResult.ResultMessage = RandomGenerator.getString(100);
+        let testResult: ITestResult = {
+            testId: 'C4663085', // must be an existing TestRail Case ID
+            status: TestStatus.Failed,
+            resultMessage: RG.getString(100),
+            created: new Date(),
+            resultId: RG.getGuid(),
+            metadata: {"durationMs": 300000}
+        };
 
         await plugin.logResult(testResult);
-    });
+    }, 300000);
 });
 
 module TestStore {

@@ -1,46 +1,50 @@
+import { TestConfig } from 'aft-core';
 import { TestRailConfig } from "../../src/configuration/testrail-config";
+import { TestRailOptions } from '../../src/configuration/testrail-options';
 
 describe('TestRailConfig', () => {
-    beforeEach(() => {
-        delete process.env[TestRailConfig.TESTRAIL_URL_KEY];
-        delete process.env[TestRailConfig.TESTRAIL_SUITEIDS_KEY];
-    });
-
     it('can get the url from aftconfig.json file', async () => {
         let expectedUrl: string = 'http://fake.testrail.ie';
-        let url: string = await TestRailConfig.url(expectedUrl);
+        let config = await TestConfig.aftConfig();
+        config['testrail'] = {"url": expectedUrl} as TestRailOptions;
+        let url: string = await TestRailConfig.instance.getUrl();
 
         expect(url).toEqual(expectedUrl);
     });
 
-    it('can override the url using environment var', async () => {
-        process.env[TestRailConfig.TESTRAIL_URL_KEY] = 'invalid value';
-
-        let url: string = await TestRailConfig.url();
-
-        expect(url).toEqual('invalid value');
-    });
-
     it('Max Log Characters defaults to 250', async () => {
-        let max: number = await TestRailConfig.maxLogCharacters();
+        let max: number = await TestRailConfig.instance.getMaxLogCharacters();
         
         expect(max).toEqual(250);
     });
 
-    it('can parse multiple suite IDs', async () => {
-        let suiteIds: number[] = await TestRailConfig.suiteIds([123, 456, 789]);
+    it('write defaults to false', async () => {
+        let write: boolean = await TestRailConfig.instance.getWrite();
 
-        expect(suiteIds.length).toEqual(3);
-        expect(suiteIds[0]).toEqual(123);
-        expect(suiteIds[1]).toEqual(456);
-        expect(suiteIds[2]).toEqual(789);
+        expect(write).toBe(false);
+    });
 
-        process.env[TestRailConfig.TESTRAIL_SUITEIDS_KEY] = '987 654';
+    it('read defaults to false', async () => {
+        let read: boolean = await TestRailConfig.instance.getRead();
 
-        suiteIds = await TestRailConfig.suiteIds();
+        expect(read).toBe(false);
+    });
 
-        expect(suiteIds.length).toEqual(2);
-        expect(suiteIds[0]).toEqual(987);
-        expect(suiteIds[1]).toEqual(654);
+    it('project_id defaults to -1', async () => {
+        let projectId: number = await TestRailConfig.instance.getProjectId();
+
+        expect(projectId).toBe(-1);
+    });
+
+    it('suite_ids defaults to empty array', async () => {
+        let suiteIds: number[] = await TestRailConfig.instance.getSuiteIds();
+
+        expect(suiteIds.length).toBe(0);
+    });
+
+    it('plan_id defaults to -1', async () => {
+        let planId: number = await TestRailConfig.instance.getPlanId();
+
+        expect(planId).toBe(-1);
     });
 });

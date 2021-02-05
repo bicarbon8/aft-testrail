@@ -1,8 +1,10 @@
 import { TestRailRun } from "./testrail-run";
 
-export class TestRailPlanEntry {
-    id: string;
-    name: string;
-    runs: TestRailRun[];
-    suite_id: number;
+export interface TestRailPlanEntry {
+    id?: string;
+    name?: string;
+    runs?: TestRailRun[];
+    suite_id?: number;
+    include_all?: boolean;
+    config_ids?: number[];
 }
