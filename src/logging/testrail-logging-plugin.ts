@@ -1,91 +1,87 @@
-import { ILoggingPlugin, TestLogLevel, TestResult, TestLog, TestStatus, TestResultMetaData, EllipsisLocation } from "aft-core";
-import { TestRailConfig } from "../configuration/testrail-config";
+import { ILoggingPlugin, LoggingLevel, ITestResult, TestLog, TestStatus, EllipsisLocation } from "aft-core";
 import { TestRailApi } from "../api/testrail-api";
 import { TestRailResultRequest } from "../api/testrail-result-request";
 import 'aft-core/dist/src/extensions/string-extensions';
+import { TestRailPlan } from "../api/testrail-plan";
+import { TestRailConfig } from "../configuration/testrail-config";
+import { ConsoleLogger } from "./console-logger";
+import { StatusConverter } from "../helpers/status-converter";
 
 export class TestRailLoggingPlugin implements ILoggingPlugin {
     name: string = 'testrail';
         
-    private logs: string = '';
-    private client: TestRailApi;
-
-    constructor() {
-        this.consoleLog('creating logging plugin instance.')
-        this.client = new TestRailApi();
-    }
-
-    async planId(): Promise<number> {
-        return await TestRailConfig.planId();
-    }
-
-    async level(): Promise<TestLogLevel> {
-        return await TestRailConfig.loggingLevel();
-    }
-
-    async enabled(): Promise<boolean> {
-        return await TestRailConfig.write();
-    }
+    private _logs: string = '';
+    private _config: TestRailConfig;
+    private _client: TestRailApi;
     
-    async log(level: TestLogLevel, message: string): Promise<void> {
-        let l: TestLogLevel = await this.level();
-        if (level.value >= l.value) {
-            this.logs += message + '\n';
-            this.logs = this.logs.ellide(await TestRailConfig.maxLogCharacters(), EllipsisLocation.beginning);
+    constructor(config?: TestRailConfig, client?: TestRailApi) {
+        this._config = config || TestRailConfig.instance;
+        this._client = client || new TestRailApi(this._config);
+    }
+
+    async isEnabled(): Promise<boolean> {
+        return await this._config.getWrite();
+    }
+
+    async onLoad(): Promise<void> {
+        // create new Test Plan if one doesn't already exist
+        if (await this.isEnabled() && (await this._config.getPlanId() <= 0)) {
+            let projectId: number = await this._config.getProjectId();
+            let suiteIds: number[] = await this._config.getSuiteIds();
+            await ConsoleLogger.log(`creating new TestRail plan in project '${projectId}' using suites [${suiteIds.join(',')}]`);
+            let plan: TestRailPlan = await this._client.createPlan(projectId, suiteIds);
+            this._config.setPlanId(plan.id);
+        }
+    }
+
+    async level(): Promise<LoggingLevel> {
+        return this._config.getLoggingLevel();
+    }
+
+    async log(level: LoggingLevel, message: string): Promise<void> {
+        if (await this.isEnabled()) {
+            let l: LoggingLevel = await this.level();
+            if (level.value >= l.value) {
+                if (this._logs.length > 0) {
+                    this._logs += '\n'; // separate new logs from previous
+                }
+                this._logs += message;
+                this._logs = this._logs.ellide(await this._config.getMaxLogCharacters(), EllipsisLocation.beginning);
+            }
         }
     }
     
-    async logResult(result: TestResult): Promise<void> {
-        await this.getClient().addResult(result.TestId, await this.getTestRailResultForExternalResult(result), await this.planId());
+    async logResult(result: ITestResult): Promise<void> {
+        if (await this.isEnabled() && result) {
+            let planId: number = await this._config.getPlanId();
+            let trResult: TestRailResultRequest = await this._getTestRailResultForExternalResult(result);
+            await this._client.addResult(result.testId, planId, trResult);
+            await ConsoleLogger.log(`'${trResult.status_id}' result sent to TestRail for test id: ${result.testId}`);
+        }
     }
 
     async finalise(): Promise<void> {
         /* do nothing */
     }
 
-    private getLogs(): string {
-        return this.logs;
+    private _getLogs(): string {
+        return this._logs;
     }
 
-    private getClient(): TestRailApi {
-        return this.client;
-    }
-
-    private async getTestRailResultForExternalResult(result: TestResult): Promise<TestRailResultRequest> {
-        let trResult: TestRailResultRequest = new TestRailResultRequest();
-
-        trResult.comment = new String(this.getLogs() + '\n' + result.ResultMessage).ellide(await TestRailConfig.maxLogCharacters(), EllipsisLocation.beginning);
-        if (result.MetaData[TestResultMetaData[TestResultMetaData.DurationMs]]) {
-            trResult.elapsed = result.MetaData[TestResultMetaData[TestResultMetaData.DurationMs]];
+    private async _getTestRailResultForExternalResult(result: ITestResult): Promise<TestRailResultRequest> {
+        let maxChars: number = await this._config.getMaxLogCharacters();
+        let elapsed: number = 0;
+        if (result.metadata) {
+            let millis: number = result.metadata['durationMs'] || 0;
+            elapsed = Math.floor(millis / 60000); // elapsed is in minutes
         }
-        trResult.defects = result.Issues.join(',');
-        switch (result.TestStatus) {
-            case TestStatus.Skipped:
-                trResult.status_id = 9;
-                break;
-            case TestStatus.Untested:
-                trResult.status_id = 3;
-                break;
-            case TestStatus.Blocked:
-                trResult.status_id = 2;
-                break;
-            case TestStatus.Passed:
-                trResult.status_id = 1;
-                break;
-            case TestStatus.Failed:
-            case TestStatus.Retest:
-            default:
-                    trResult.status_id = 4;
-                    break;
-        }
+        let trResult: TestRailResultRequest = {
+            comment: new String(`${this._getLogs()}\n${result.resultMessage}`).ellide(maxChars, EllipsisLocation.beginning),
+            defects: result.defects?.join(','),
+            elapsed: elapsed.toString(),
+            status_id: StatusConverter.instance.toTestRailStatus(result.status)
+        };
 
         return trResult;
-    }
-
-    private async consoleLog(message: string): Promise<void> {
-        let level: TestLogLevel = await this.level();
-        if (level.value <= TestLogLevel.trace.value && level != TestLogLevel.none) {
-            console.log(TestLog.format(this.name, TestLogLevel.trace, message));
-        }
     }
 }

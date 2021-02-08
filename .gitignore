@@ -24,3 +24,4 @@ node_modules/
 #compiled js
 dist/
 *.tgz
+.nyc_output/
