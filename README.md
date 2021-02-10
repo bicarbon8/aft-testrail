@@ -10,7 +10,7 @@ the `TestRailLoggingPlugin` implements the `ILoggingPlugin` in `aft-core`. if en
     "logging": {
         "pluginNames": [
             ...
-            "testrail-logging-plugin"
+            "./node_modules/aft-testrail/dist/src/logging/testrail-logging-plugin"
         ]
     },
     ...
@@ -32,7 +32,7 @@ the `TestRailTestCaseHandlerPlugin` implements the `ITestCaseHandlerPlugin` inte
 {
     ...
     "testCaseManager": {
-        "pluginName": "testrail-test-case-handler-plugin"
+        "pluginName": "./node_modules/aft-testrail/dist/src/integration/test-case/testrail-test-case-handler-plugin"
     },
     ...
     "testrail": {
