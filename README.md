@@ -1,102 +1,85 @@
 # AFT-TestRail
-provides TestRail result logging as well as test execution filtering for users of `aft-core` by implementing plugins for the `ILoggingPlugin` and `ITestCaseHandlerPlugin` interfaces.
+provides TestRail result logging as well as test execution filtering for users of `aft-core` by implementing plugins for the `AbstractLoggingPlugin` and `AbstractTestCasePlugin` plugin base classes.
 
 ## ILoggingPlugin
-the `TestRailLoggingPlugin` implements the `ILoggingPlugin` in `aft-core`. if enabled, this plugin will log test results to test cases in a TestRail Plan (if no plan is specified a new one is created). it can be enabled by including the following in your `aftconfig.json` file:
-
+the `TestRailLoggingPlugin` extends from `AbstractLoggingPlugin` in `aft-core`. if enabled, this plugin will log test results to test cases in a TestRail Plan (if no plan is specified a new one is created in the `onLoad` function of the plugin). it can be enabled by including the following in your `aftconfig.json` file:
 ```json
 {
-    ...
-    "logging": {
+    "loggingpluginmanager": {
         "pluginNames": [
-            ...
-            "./node_modules/aft-testrail/dist/src/logging/testrail-logging-plugin"
+            "testrail-logging-plugin"
         ]
     },
-    ...
-    "testrail": {
+    "testrailconfig": {
         "url": "https://your.testrail.instance/",
         "user": "valid.user@testrail.instance",
-        "access_key": "your_access_key",
-        "write": true,
-        "plan_id": 12345
+        "accesskey": "your_access_key",
+        "planid": 12345
+    },
+    "testrailloggingplugin": {
+        "level": "warn",
+        "maxLogCharacters": 100
     }
-    ...
 }
 ```
+**testrailloggingplugin**:
+- **level** - [OPTIONAL] `string` value of `none`, `error`, `warn`, `step`, `info`, `debug`, or `trace` _(defaults to `none`)_
+- **maxLogCharacters** - [OPTIONAL] `number` for the maximum number of additional log characters to send to TestRail when logging a `TestResult` _(defaults to 250)_
 
 ## ITestCaseHandlerPlugin
-the `TestRailTestCaseHandlerPlugin` implements the `ITestCaseHandlerPlugin` interface in `aft-core`. if enabled this plugin will lookup the status of TestRail tests based on their case ID from the AFT `testCases` array passed in to a `should` or `TestWrapper`. it can be enabled by including the following in your `aftconfig.json` file:
-
+the `TestRailTestCasePlugin` extends from `AbstractTestCasePlugin` interface in `aft-core`. if enabled this plugin will lookup the status of TestRail tests based on their case ID from the AFT `testCases` array passed in to a `should` or `TestWrapper`. it can be enabled by including the following in your `aftconfig.json` file:
 ```json
 {
-    ...
-    "testCaseManager": {
-        "pluginName": "./node_modules/aft-testrail/dist/src/integration/test-case/testrail-test-case-handler-plugin"
+    "testcasepluginmanager": {
+        "pluginNames": [
+            "testrail-test-case-plugin"
+        ]
     },
-    ...
-    "testrail": {
+    "testrailconfig": {
         "url": "https://your.testrail.instance/",
         "user": "valid.user@testrail.instance",
-        "access_key": "your_access_key",
-        "read": true,
-        "plan_id": 12345
+        "accesskey": "your_access_key",
+        "planid": 12345
     }
-    ...
 }
 ```
-
 ## Configuration
 to submit results to or filter test execution based on existence and status of tests in TestRail, you will need to have an account with write permissions in TestRail. These values can be specified in your `aftconfig.json` as follows:
-
 ```json
 {
-    ...
-    "testrail": {
+    "testrailconfig": {
         "url": "http://fake.testrail.io",
         "user": "your.email@your.domain.com",
-        "access_key": "your_testrail_api_key_or_password",
-        "logging_level": "warn",
-        "read": true,
-        "write": true,
-        "project_id": 3,
-        "suite_ids": [1219, 744],
-        "plan_id": 12345,
-        "max_log_characters": 100
+        "accesskey": "your_testrail_api_key_or_password",
+        "projectid": 3,
+        "suiteids": [1219, 744],
+        "planid": 12345,
+        "cacheDurationMs": 1000000
     }
-    ...
 }
 ```
 - **url** - [REQUIRED] the full URL to your instance of TestRail. _(NOTE: this is **NOT** the API URL, just the base domain name)_
 - **user** - [REQUIRED] the email address of the user that will submit test results
-- **access_key** - [REQUIRED] the access key (or password) for the above user
-- **logging_level** - the minimum level of logs to capture and send with any `TestResult` _(defaults to 250)_
-- **read** - if set to `true` then test execution control is based on finding a matching test case ID in the `TestWrapper` or `should` clause used to execute an expectation. _(defaults to `false`)_
-- **write** - if set to `true` then test results will be written to a TestRail plan. _(defaults to `false`)_
-- **project_id** - the TestRail project containing test suites to be used in test execution. _(Required only if `plan_id` is not set)_
-- **suite_ids** - an array of TestRail suites containing test cases to be used in test execution. _(Required only if `plan_id` is not set)_
-- **plan_id** - an existing TestRail Plan to be used for logging test results if `write` is `true` and used for controlling execution of tests if `read` is `true`. _(NOTE: if no value is specified for `plan_id` and `write` is set to `true`, a new TestRail Plan will be created using the suites specified in `suite_ids` and the `project_id`)_
-- **max_log_characters** - the maximum number of log message characters to send with any non passing result _(defaults to 250)_
+- **accesskey** - [REQUIRED] the access key (or password) for the above user
+- **projectid** - the TestRail project containing test suites to be used in test execution. _(Required only if `planid` is not set)_
+- **suiteids** - an array of TestRail suites containing test cases to be used in test execution. _(Required only if `planid` is not set)_
+- **planid** - an existing TestRail Plan to be used for logging test results if `testrail-logging-plugin` is referenced and enabled and used for controlling execution of tests. _(NOTE: if no value is specified for `planid` and `testrail-logging-plugin` is enabled, a new TestRail Plan will be created using the suites specified in `suiteids` and the `projectid`)_
+- **cacheDurationMs** - the maximum number of milliseconds to cache responses from TestRail's API _(defaults to 300000)_
 
 ## Usage
-you can submit results directly by calling the `aft-core.TestLog.logResult(result: TestResult)` function or results will automatically be submitted if using the `aft-core.should(expectation, options)` with valid `testCases` specified in the `options` object. 
+you can submit results directly by calling the `aft-core.LoggingPluginManager.logResult(result: TestResult)` function or results will automatically be submitted if using the `aft-core.should(options)` with valid `testCases` specified in the `options` object. 
 
-----
+> NOTE: sending a `TestResult` with a `TestStatus` of `Failed` will be converted to a status of `Retest` before submitting to TestRail**
 
-**NOTE: sending a `ITestResult` with a `TestStatus` of `Failed` will be converted to a status of `Retest` before submitting to TestRail**
-
-----
-
-### via `aft-core.TestLog`:
+### via `aft-core.LoggingPluginManager`:
 ```typescript
-let logger: TestLog = new TestLog({name: 'sample logger'});
-await logger.logResult({
+let logMgr = new LoggingPluginManager({logName: 'example'});
+await logMgr.logResult({
     testId: 'C3190', // must be an existing TestRail Case ID contained in your referenced TestRail Plan ID
     status: TestStatus.Failed,
     resultMessage: 'there was an error when running this test'
 });
 ```
-
 ### via `aft-core.should` (`aft-core.TestWrapper`):
 ```typescript
 /** 

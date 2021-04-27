@@ -1,20 +1,13 @@
 import { CacheObject } from "./cache-object";
-import { OptionsManager } from 'aft-core';
-import { TestRailOptions } from "../configuration/testrail-options";
+import { trconfig } from "../configuration/testrail-config";
 
 /**
  * use `TestRailCache.instance` instead
  */
-export class TestRailCache extends OptionsManager<TestRailOptions> {
-    getOptionsConfigurationKey() {
-        return 'testRail';
-    }
-
+export class TestRailCache {
     private _storage: Map<string, CacheObject>;
-    private _cacheDuration: number;
 
-    constructor(options?: TestRailOptions) {
-        super(options);
+    constructor() {
         this._storage = new Map<string, CacheObject>();
     }
 
@@ -43,7 +36,7 @@ export class TestRailCache extends OptionsManager<TestRailOptions> {
         this._storage.set(key, {
             data: val,
             created: new Date(),
-            validForMs: await this.cacheDuration()
+            validForMs: await trconfig.getCacheDuration()
         });
     }
 
@@ -52,13 +45,6 @@ export class TestRailCache extends OptionsManager<TestRailOptions> {
      */
     clear() {
         this._storage.clear();
-    }
-
-    private async cacheDuration(): Promise<number> {
-        if (this._cacheDuration === undefined) {
-            this._cacheDuration = await this.getOption('cache_duration_ms', 300000);
-        }
-        return this._cacheDuration;
     }
 
     private isStillValid(cacheObject: CacheObject): boolean {

@@ -1,5 +1,5 @@
-import { HttpRequest, HttpService, HttpResponse, HttpMethod } from "aft-web-services";
-import { Convert, Wait, OptionsManager } from "aft-core";
+import { HttpRequest, HttpService, HttpResponse, HttpMethod } from "../../../aft-web-services/src";
+import { convert, wait } from "../../../aft-core/src";
 import { TestRailCase } from "./testrail-case";
 import { TestRailCache } from "./testrail-cache";
 import { TestRailTest } from "./testrail-test";
@@ -10,14 +10,13 @@ import { TestRailPlan } from "./testrail-plan";
 import { ICanHaveError } from "./ican-have-error";
 import { AddPlanRequest } from "./add-plan-request";
 import { TestRailPlanEntry } from "./testrail-plan-entry";
-import { TestRailConfig } from "../configuration/testrail-config";
-import { ConsoleLogger } from "../logging/console-logger";
+import { TestRailConfig, trconfig } from "../configuration/testrail-config";
 
 export class TestRailApi {
     private _config: TestRailConfig;
     
     constructor(config?: TestRailConfig) {
-        this._config = config || new TestRailConfig();
+        this._config = config || trconfig;
     }
 
     /**
@@ -54,7 +53,6 @@ export class TestRailApi {
                 break;
             }
         }
-        await ConsoleLogger.log(`no TestRailTest could be found for CaseId '${caseId}' in TestRailPlan: '${planId}'."`);
         return test;
     }
 
@@ -209,7 +207,7 @@ export class TestRailApi {
             if (err && err.error) {
                 if (err.error.includes('API Rate Limit Exceeded')) {
                     retry = true;
-                    await Wait.forDuration(60000); // one minute
+                    await wait.forDuration(60000); // one minute
                 } else {
                     return Promise.reject(err.error);
                 }
@@ -222,6 +220,6 @@ export class TestRailApi {
     private async _getAuth(): Promise<string> {
         let username: string = await this._config.getUser();
         let accessKey: string = await this._config.getAccessKey();
-        return Convert.toBase64Encoded(`${username}:${accessKey}`);
+        return convert.toBase64Encoded(`${username}:${accessKey}`);
     }
 }

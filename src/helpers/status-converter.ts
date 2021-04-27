@@ -1,4 +1,4 @@
-import { TestStatus } from 'aft-core';
+import { TestStatus } from '../../../aft-core/src';
 
 /**
  * converts to and from the TestRail `status_id` and the
