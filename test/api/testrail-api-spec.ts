@@ -36,7 +36,7 @@ describe('TestRailApi', () => {
         let config: TestRailConfig = new TestRailConfig({
             url: 'http://127.0.0.1/',
             user: 'fake@fake.fake',
-            access_key: 'fake_key'
+            accesskey: 'fake_key'
         });
         let api: TestRailApi = new TestRailApi(config);
 
@@ -71,7 +71,7 @@ describe('TestRailApi', () => {
         let config: TestRailConfig = new TestRailConfig({
             url: 'http://127.0.0.1/',
             user: 'fake@fake.fake',
-            access_key: 'fake_key'
+            accesskey: 'fake_key'
         });
         let api: TestRailApi = new TestRailApi(config);
         let plan: TestRailPlan = await api.getPlan(123);
@@ -104,7 +104,7 @@ describe('TestRailApi', () => {
         let config: TestRailConfig = new TestRailConfig({
             url: 'http://127.0.0.1/',
             user: 'fake@fake.fake',
-            access_key: 'fake_key'
+            accesskey: 'fake_key'
         });
         let api: TestRailApi = new TestRailApi(config);
         let test: any = await api.getPlan(123);
@@ -140,7 +140,7 @@ describe('TestRailApi', () => {
         let config: TestRailConfig = new TestRailConfig({
             url: 'http://127.0.0.1/',
             user: 'fake@fake.fake',
-            access_key: 'fake_key'
+            accesskey: 'fake_key'
         });
         let api: TestRailApi = new TestRailApi(config);
         let plan: TestRailPlan = await api.createPlan(1, [2, 3]);

@@ -1,11 +1,11 @@
 import { ITestCase, TestStatus, ProcessingResult } from 'aft-core';
 import { HttpResponse, HttpService } from 'aft-web-services';
-import { TestRailConfig, TestRailTestCaseHandlerPlugin } from "../../../src";
-import { TestRailApi } from '../../../src/api/testrail-api';
-import { TestRailCase } from '../../../src/api/testrail-case';
-import { TestRailTest } from '../../../src/api/testrail-test';
+import { TestRailConfig, TestRailTestCasePlugin } from "../../src";
+import { TestRailApi } from '../../src/api/testrail-api';
+import { TestRailCase } from '../../src/api/testrail-case';
+import { TestRailTest } from '../../src/api/testrail-test';
 
-describe('TestRailTestCaseHandlerPlugin', () => {
+describe('TestRailTestCasePlugin', () => {
     beforeEach(() => {
         spyOn(HttpService.instance, 'performRequest').and.returnValue(Promise.resolve(new HttpResponse({
             headers: {'content-type': 'application/json'},
@@ -18,10 +18,8 @@ describe('TestRailTestCaseHandlerPlugin', () => {
         let config: TestRailConfig = new TestRailConfig({
             url: 'http://127.0.0.1',
             user: 'fake@fake.fake',
-            access_key: 'fake_key',
-            read: true,
-            logging_level: 'info',
-            plan_id: 1234
+            accesskey: 'fake_key',
+            planid: 1234
         });
         let api: TestRailApi = new TestRailApi(config);
         let expected: TestRailTest = {
@@ -33,7 +31,8 @@ describe('TestRailTestCaseHandlerPlugin', () => {
             status_id: TestStatus.Passed.valueOf()
         } as TestRailTest;
         spyOn(api, 'getTestsInRuns').and.returnValue(Promise.resolve([expected]));
-        let plugin: TestRailTestCaseHandlerPlugin = new TestRailTestCaseHandlerPlugin(config, api);
+        let plugin: TestRailTestCasePlugin = new TestRailTestCasePlugin({_config: config, _client: api, enabled: true});
+        await plugin.onLoad();
 
         let actual: ITestCase = await plugin.getTestCase('C1234');
 
@@ -48,11 +47,9 @@ describe('TestRailTestCaseHandlerPlugin', () => {
         let config: TestRailConfig = new TestRailConfig({
             url: 'http://127.0.0.1',
             user: 'fake@fake.fake',
-            access_key: 'fake_key',
-            read: true,
-            logging_level: 'info',
-            project_id: 4,
-            suite_ids: [12, 15]
+            accesskey: 'fake_key',
+            projectid: 4,
+            suiteids: [12, 15]
         });
         let api: TestRailApi = new TestRailApi(config);
         let expected: TestRailCase = {
@@ -63,7 +60,8 @@ describe('TestRailTestCaseHandlerPlugin', () => {
             created_on: new Date().valueOf()
         } as TestRailCase;
         spyOn(api, 'getCasesInSuites').and.returnValue(Promise.resolve([expected]));
-        let plugin: TestRailTestCaseHandlerPlugin = new TestRailTestCaseHandlerPlugin(config, api);
+        let plugin: TestRailTestCasePlugin = new TestRailTestCasePlugin({_config: config, _client: api, enabled: true});
+        await plugin.onLoad();
 
         let actual: ITestCase = await plugin.getTestCase('C1234');
 
@@ -77,11 +75,14 @@ describe('TestRailTestCaseHandlerPlugin', () => {
 
     it('will skip main processing of functions if not enabled', async () => {
         let config: TestRailConfig = new TestRailConfig({
-            read: false
+            url: 'fake.url',
+            user: 'fake-user@fake.url',
+            accesskey: 'fake-access-key'
         });
         let api: TestRailApi = new TestRailApi(config);
         spyOnAllFunctions(api);
-        let plugin: TestRailTestCaseHandlerPlugin = new TestRailTestCaseHandlerPlugin(config, api);
+        let plugin: TestRailTestCasePlugin = new TestRailTestCasePlugin({_config: config, _client: api, enabled: false});
+        await plugin.onLoad();
 
         let test: ITestCase = await plugin.getTestCase('C1234');
         let tests: ITestCase[] = await plugin.findTestCases('case_id=1234');
@@ -96,15 +97,18 @@ describe('TestRailTestCaseHandlerPlugin', () => {
 
     it('will return true for shouldRun if read not enabled', async () => {
         let config: TestRailConfig = new TestRailConfig({
-            read: false
+            url: 'fake.url',
+            user: 'fake-user@fake.url',
+            accesskey: 'fake-access-key'
         });
         let api: TestRailApi = new TestRailApi(config);
         spyOnAllFunctions(api);
-        let plugin: TestRailTestCaseHandlerPlugin = new TestRailTestCaseHandlerPlugin(config, api);
+        let plugin: TestRailTestCasePlugin = new TestRailTestCasePlugin({_config: config, _client: api, enabled: false});
+        await plugin.onLoad();
 
         let shouldRun: ProcessingResult = await plugin.shouldRun('C1234');
 
-        expect(shouldRun.success).toBeTrue();
+        expect(shouldRun.success).toBe(true);
         expect(api.getRunsInPlan).not.toHaveBeenCalled();
         expect(api.getTestByCaseId).not.toHaveBeenCalled();
         expect(api.getTestsInRuns).not.toHaveBeenCalled();

@@ -1,25 +1,44 @@
-import { ITestCase, ITestCaseHandlerPlugin, ProcessingResult, TestStatus } from 'aft-core';
-import { TestRailApi } from '../../api/testrail-api';
-import { TestRailCase } from '../../api/testrail-case';
-import { TestRailRun } from '../../api/testrail-run';
-import { TestRailTest } from '../../api/testrail-test';
-import { TestRailConfig } from '../../configuration/testrail-config';
-import { StatusConverter } from '../../helpers/status-converter';
-import { ConsoleLogger } from '../../logging/console-logger';
+import { nameof } from 'ts-simple-nameof';
+import { ITestCase, AbstractTestCasePlugin, ITestCasePluginOptions, ProcessingResult, TestStatus } from 'aft-core';
+import { TestRailApi } from '../api/testrail-api';
+import { TestRailCase } from '../api/testrail-case';
+import { TestRailRun } from '../api/testrail-run';
+import { TestRailTest } from '../api/testrail-test';
+import { TestRailConfig, trconfig } from '../configuration/testrail-config';
+import { StatusConverter } from '../helpers/status-converter';
 
-export class TestRailTestCaseHandlerPlugin implements ITestCaseHandlerPlugin {
-    name: string = 'testrail';
+export interface TestRailTestCasePluginOptions extends ITestCasePluginOptions {
+    _config?: TestRailConfig;
+    _client?: TestRailApi;
+}
 
+/**
+ * NOTE: this plugin references configuration from the `aftconfig.json` file
+ * under a name of `testrailtestcaseplugin`. Ex:
+ * ```json
+ * {
+ *   "testrailtestcaseplugin": {
+ *     "enabled": false
+ *   }
+ * }
+ * ```
+ */
+export class TestRailTestCasePlugin extends AbstractTestCasePlugin {
     private _config: TestRailConfig;
     private _client: TestRailApi;
 
-    constructor(config?: TestRailConfig, client?: TestRailApi) {
-        this._config = config || TestRailConfig.instance;
-        this._client = client || new TestRailApi(this._config);
+    constructor(options?: TestRailTestCasePluginOptions) {
+        super(nameof(TestRailTestCasePlugin).toLowerCase(), options);
+        this._config = options?._config || trconfig;
+        this._client = options?._client || new TestRailApi(this._config);
+    }
+
+    async onLoad(): Promise<void> {
+        /* do nothing */
     }
 
     async getTestCase(caseId: string): Promise<ITestCase> {
-        if (await this.isEnabled()) {
+        if (await this.enabled()) {
             if (caseId && caseId.startsWith('C')) {
                 caseId = caseId.replace('C', '');
             }
@@ -43,13 +62,12 @@ export class TestRailTestCaseHandlerPlugin implements ITestCaseHandlerPlugin {
      * @param searchTerm a string containing a key and a value to be used to locate tests
      */
     async findTestCases(searchTerm: string): Promise<ITestCase[]> {
-        if (await this.isEnabled()) {
+        if (await this.enabled()) {
             if (searchTerm) {
                 let keyVal: string[] = searchTerm.split('=');
                 if (keyVal && keyVal.length > 1) {
                     let key: string = keyVal[0];
                     let val: string = keyVal[1];
-                    await ConsoleLogger.log(`searching for tests or cases with field '${key}' set to '${val}'...`);
                     return await this._findTestsByField(key, val);
                 }
             }
@@ -65,7 +83,7 @@ export class TestRailTestCaseHandlerPlugin implements ITestCaseHandlerPlugin {
      * existing plan or a case in an existing suite
      */
     async shouldRun(caseId: string): Promise<ProcessingResult> {
-        if (await this.isEnabled()) {
+        if (await this.enabled()) {
             let test: ITestCase = await this.getTestCase(caseId);
             if (test) {
                 if (test.status != TestStatus.Passed) {
@@ -78,12 +96,8 @@ export class TestRailTestCaseHandlerPlugin implements ITestCaseHandlerPlugin {
         return {success: true, message: 'plugin disabled so run all tests'};
     }
 
-    async isEnabled(): Promise<boolean> {
-        return await this._config.getRead();
-    }
-    
-    async onLoad(): Promise<void> {
-        /** not implemented */
+    async dispose(error?: Error): Promise<void> {
+        /* do nothing */
     }
 
     private async _findTestsByField(field: string, val: string): Promise<ITestCase[]> {

@@ -1,92 +1,98 @@
-import { TestRailOptions } from "./testrail-options";
+import { OptionsManager } from 'aft-core';
+import { nameof } from "ts-simple-nameof";
 
-import { OptionsManager, LoggingLevel } from 'aft-core';
+export class TestRailConfigOptions {
+    url: string;
+    user: string;
+    accesskey: string;
+    projectid?: number;
+    suiteids?: number[];
+    planid?: number;
+    cacheDurationMs?: number;
 
-export class TestRailConfig extends OptionsManager<TestRailOptions> {
+    _optMgr?: OptionsManager;
+}
+
+/**
+ * reads configuration from either the passed in {TestRailConfigOptions}
+ * or the `aftconfig.json` file under a heading of `testrailconfig` like:
+ * ```json
+ * {
+ *   "testrailconfig": {
+ *     "url": "https://your-instance-of.testrail.io",
+ *     "user": "your-username@your-company.com",
+ *     "accesskey": "your-access-key-for-testrail",
+ *     "projectid": 123,
+ *     "suiteids": [234, 345, 456],
+ *     "planid": 123456
+ *   }
+ * }
+ * ```
+ * NOTE:
+ * `projectid` and `suiteids` are used if no `planid` is specified
+ */
+export class TestRailConfig {
     private _url: string;
     private _user: string;
     private _accessKey: string;
-    private _logLevel: LoggingLevel;
-    private _read: boolean;
-    private _write: boolean;
-    private _maxLogChars: number;
     private _projectId: number;
     private _suiteIds: number[];
     private _planId: number;
+    private _cacheDuration: number;
     
-    getOptionsConfigurationKey(): string {
-        return 'testrail';
-    }
+    private _optMgr: OptionsManager;
 
+    constructor(options?: TestRailConfigOptions) {
+        this._optMgr = options?._optMgr || new OptionsManager(nameof(TestRailConfig).toLowerCase(), options);
+    }
+    
     async getUrl(): Promise<string> {
         if (!this._url) {
-            this._url = await this.getOption('url');
+            this._url = await this._optMgr.getOption(nameof<TestRailConfigOptions>(o => o.url));
         }
         return this._url;
     }
 
     async getUser(): Promise<string> {
         if (!this._user) {
-            this._user = await this.getOption('user');
+            this._user = await this._optMgr.getOption(nameof<TestRailConfigOptions>(o => o.user));
         }
         return this._user;
     }
 
     async getAccessKey(): Promise<string> {
         if (!this._accessKey) {
-            this._accessKey = await this.getOption('access_key');
+            this._accessKey = await this._optMgr.getOption(nameof<TestRailConfigOptions>(o => o.accesskey));
         }
         return this._accessKey;
     }
 
-    async getLoggingLevel(): Promise<LoggingLevel> {
-        if (this._logLevel === undefined) {
-            let levelStr: string = await this.getOption('logging_level', 'error');
-            this._logLevel = LoggingLevel.parse(levelStr);
-        }
-        return this._logLevel;
-    }
-
-    async getRead(): Promise<boolean> {
-        if (this._read === undefined) {
-            this._read = await this.getOption('read', false);
-        }
-        return this._read;
-    }
-
-    async getWrite(): Promise<boolean> {
-        if (this._write === undefined) {
-            this._write = await this.getOption('write', false);
-        }
-        return this._write;
-    }
-
-    async getMaxLogCharacters(): Promise<number> {
-        if (this._maxLogChars === undefined) {
-            this._maxLogChars = await this.getOption('max_log_characters', 250);
-        }
-        return this._maxLogChars;
-    }
-
     async getProjectId(): Promise<number> {
         if (this._projectId === undefined) {
-            this._projectId = await this.getOption('project_id', -1);
+            this._projectId = await this._optMgr.getOption(nameof<TestRailConfigOptions>(o => o.projectid), -1);
         }
         return this._projectId;
     }
 
     async getSuiteIds(): Promise<number[]> {
         if (this._suiteIds === undefined) {
-            this._suiteIds = await this.getOption('suite_ids', []);
+            this._suiteIds = await this._optMgr.getOption(nameof<TestRailConfigOptions>(o => o.suiteids), []);
         }
         return this._suiteIds;
     }
 
     async getPlanId(): Promise<number> {
         if (this._planId === undefined) {
-            this._planId = await this.getOption('plan_id', -1);
+            this._planId = await this._optMgr.getOption(nameof<TestRailConfigOptions>(o => o.planid), -1);
         }
         return this._planId;
+    }
+
+    async getCacheDuration(): Promise<number> {
+        if (this._cacheDuration === undefined) {
+            this._cacheDuration = await this._optMgr.getOption(nameof<TestRailConfigOptions>(o => o.cacheDurationMs), 300000);
+        }
+        return this._cacheDuration;
     }
 
     async setPlanId(id: number): Promise<void> {
@@ -94,6 +100,4 @@ export class TestRailConfig extends OptionsManager<TestRailOptions> {
     }
 }
 
-export module TestRailConfig {
-    export var instance = new TestRailConfig();
-}
+export const trconfig = new TestRailConfig();
