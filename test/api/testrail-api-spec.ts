@@ -1,5 +1,5 @@
 import { TestRailApi } from "../../src/api/testrail-api";
-import { HttpRequest, HttpService, HttpResponse } from "../../../aft-web-services/src";
+import { HttpRequest, HttpService, HttpResponse } from "aft-web-services";
 import { TestRailCache } from "../../src/api/testrail-cache";
 import { TestRailConfig } from "../../src";
 import { TestRailPlanEntry } from "../../src/api/testrail-plan-entry";

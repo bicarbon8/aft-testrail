@@ -1,4 +1,4 @@
-import { OptionsManager } from '../../../aft-core/src';
+import { OptionsManager } from 'aft-core';
 import { nameof } from "ts-simple-nameof";
 
 export class TestRailConfigOptions {

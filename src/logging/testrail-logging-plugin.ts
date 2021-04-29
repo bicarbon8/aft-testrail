@@ -1,4 +1,4 @@
-import { AbstractLoggingPlugin, LoggingLevel, ITestResult, EllipsisLocation, ellide, ILoggingPluginOptions } from "../../../aft-core/src";
+import { AbstractLoggingPlugin, LoggingLevel, ITestResult, EllipsisLocation, ellide, ILoggingPluginOptions } from "aft-core";
 import { TestRailApi } from "../api/testrail-api";
 import { TestRailResultRequest } from "../api/testrail-result-request";
 import { TestRailPlan } from "../api/testrail-plan";

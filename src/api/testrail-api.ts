@@ -1,5 +1,5 @@
-import { HttpRequest, HttpService, HttpResponse, HttpMethod } from "../../../aft-web-services/src";
-import { convert, wait } from "../../../aft-core/src";
+import { HttpRequest, HttpService, HttpResponse, HttpMethod } from "aft-web-services";
+import { convert, wait } from "aft-core";
 import { TestRailCase } from "./testrail-case";
 import { TestRailCache } from "./testrail-cache";
 import { TestRailTest } from "./testrail-test";

@@ -1,4 +1,4 @@
-import { aftconfigMgr, OptionsManager, rand } from '../../../aft-core/src';
+import { aftconfigMgr, OptionsManager, rand } from 'aft-core';
 import { TestRailConfig, TestRailConfigOptions, trconfig } from "../../src/configuration/testrail-config";
 
 describe('TestRailConfig', () => {

@@ -1,5 +1,5 @@
 import { nameof } from 'ts-simple-nameof';
-import { ITestCase, AbstractTestCasePlugin, ITestCasePluginOptions, ProcessingResult, TestStatus } from '../../../aft-core/src';
+import { ITestCase, AbstractTestCasePlugin, ITestCasePluginOptions, ProcessingResult, TestStatus } from 'aft-core';
 import { TestRailApi } from '../api/testrail-api';
 import { TestRailCase } from '../api/testrail-case';
 import { TestRailRun } from '../api/testrail-run';

@@ -1,5 +1,5 @@
-import { ITestCase, TestStatus, ProcessingResult } from '../../../aft-core/src';
-import { HttpResponse, HttpService } from '../../../aft-web-services/src';
+import { ITestCase, TestStatus, ProcessingResult } from 'aft-core';
+import { HttpResponse, HttpService } from 'aft-web-services';
 import { TestRailConfig, TestRailTestCasePlugin } from "../../src";
 import { TestRailApi } from '../../src/api/testrail-api';
 import { TestRailCase } from '../../src/api/testrail-case';

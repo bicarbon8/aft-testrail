@@ -1,10 +1,10 @@
 import { TestRailLoggingPlugin } from "../../src/logging/testrail-logging-plugin";
-import { rand, LoggingLevel, EllipsisLocation, ITestResult, TestStatus, ellide } from "../../../aft-core/src";
+import { rand, LoggingLevel, EllipsisLocation, ITestResult, TestStatus, ellide } from "aft-core";
 import { TestRailApi } from "../../src/api/testrail-api";
 import { TestRailResultRequest } from "../../src/api/testrail-result-request";
 import { TestRailResultResponse } from "../../src/api/testrail-result-response";
 import { TestRailConfig } from "../../src/configuration/testrail-config";
-import { HttpResponse, HttpService } from "../../../aft-web-services/src";
+import { HttpResponse, HttpService } from "aft-web-services";
 
 describe('TestRailLoggingPlugin', () => {
     beforeEach(() => {
@@ -27,7 +27,12 @@ describe('TestRailLoggingPlugin', () => {
             user: 'fake@fake.fake', 
             accesskey: 'fake-key'
         });
-        let plugin: TestRailLoggingPlugin = new TestRailLoggingPlugin({_config: config, level: 'info', enabled: true});
+        let plugin: TestRailLoggingPlugin = new TestRailLoggingPlugin({
+            _config: config, 
+            level: 'info', 
+            enabled: true,
+            maxLogCharacters: 250
+        });
         await plugin.onLoad();
         let getLogsSpy = spyOn<any>(plugin, '_getLogs').and.callThrough();
 
@@ -44,7 +49,12 @@ describe('TestRailLoggingPlugin', () => {
             user: 'fake@fake.fake', 
             accesskey: 'fake-key'
         });
-        let plugin: TestRailLoggingPlugin = new TestRailLoggingPlugin({_config: config, level: 'info', enabled: true});
+        let plugin: TestRailLoggingPlugin = new TestRailLoggingPlugin({
+            _config: config, 
+            level: 'info', 
+            enabled: true,
+            maxLogCharacters: 250
+        });
         await plugin.onLoad();
         let getLogsSpy = spyOn<any>(plugin, '_getLogs').and.callThrough();
         
